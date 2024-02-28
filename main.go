@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"golang.org/x/crypto/bcrypt"
 	"log"
 	"net/http"
 
@@ -10,7 +11,6 @@ import (
 	_ "github.com/lib/pq"
 )
 
-// Структура для хранения информации о пользователе
 type User struct {
 	ID       int    `json:"id"`
 	Username string `json:"username"`
@@ -37,8 +37,17 @@ func main() {
 			return
 		}
 
+		// Хэширование пароля
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
+			return
+		}
+
+		user.Password = string(hashedPassword)
+
 		// Вставка данных пользователя в таблицу
-		_, err := db.Exec("INSERT INTO users (username, email, password) VALUES ($1, $2, $3)", user.Username, user.Email, user.Password)
+		_, err = db.Exec("INSERT INTO users (username, email, password) VALUES ($1, $2, $3)", user.Username, user.Email, user.Password)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to register user"})
 			return
