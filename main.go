@@ -105,6 +105,23 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"message": "Login successful"})
 	})
 
+	// Маршрут для получения информации о сессии пользователя
+	router.GET("/session-info", func(c *gin.Context) {
+		// Получаем сеанс
+		session := sessions.Default(c)
+		// Получаем значение из сессии (например, идентификатор пользователя)
+		userID := session.Get("userID")
+
+		// Проверяем, есть ли значение в сессии
+		if userID == nil {
+			c.String(http.StatusOK, "Сессия пользователя не найдена")
+			return
+		}
+
+		// Если значение найдено, отображаем его
+		c.String(http.StatusOK, "Идентификатор пользователя из сессии: %v", userID)
+	})
+
 	// Запуск сервера на порту 8080
 	if err := router.Run(":8080"); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
