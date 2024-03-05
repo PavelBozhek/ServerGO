@@ -3,6 +3,8 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"golang.org/x/crypto/bcrypt"
 	"log"
 	"net/http"
@@ -32,6 +34,9 @@ type User struct {
 func main() {
 	// Инициализация маршрутизатора Gin
 	router := gin.Default()
+
+	store := cookie.NewStore([]byte("your_secret_key_here"))
+	router.Use(sessions.Sessions("mysession", store))
 
 	// Подключение к базе данных PostgreSQL
 	db, err := connectDB()
@@ -63,6 +68,12 @@ func main() {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to register user"})
 			return
 		}
+		// Получаем сеанс
+		session := sessions.Default(c)
+		// Устанавливаем пользовательский идентификатор в сеанс
+		session.Set("userID", user.ID)
+		// Сохраняем сеанс
+		session.Save()
 
 		c.JSON(http.StatusOK, gin.H{"message": "User registered successfully"})
 	})
@@ -84,6 +95,12 @@ func main() {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 			return
 		}
+		// Получаем сеанс
+		session := sessions.Default(c)
+		// Устанавливаем пользовательский идентификатор в сеанс
+		session.Set("userID", user.ID)
+		// Сохраняем сеанс
+		session.Save()
 
 		c.JSON(http.StatusOK, gin.H{"message": "Login successful"})
 	})
