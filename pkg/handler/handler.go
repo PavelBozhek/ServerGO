@@ -23,7 +23,7 @@ func InitRoutes(router *gin.Engine, db *sql.DB) {
 	router.PUT("/posts/:id", func(c *gin.Context) {
 		blog.UpdatePost(c, db)
 	})
-	router.DELETE("/posts/:postID/comments/:commentID", func(c *gin.Context) {
+	router.DELETE("/posts/:postID", func(c *gin.Context) {
 		blog.DeletePost(c, db)
 	})
 	router.POST("/posts/:id/comments", func(c *gin.Context) {
@@ -31,6 +31,9 @@ func InitRoutes(router *gin.Engine, db *sql.DB) {
 	})
 	router.GET("/posts/:id/comments", func(c *gin.Context) {
 		blog.GetComment(c, db)
+	})
+	router.DELETE("/posts/:postID/comments/:commentID", func(c *gin.Context) {
+		blog.DeleteComment(c, db)
 	})
 	router.POST("/login", func(c *gin.Context) {
 		auth.Login(c, db)

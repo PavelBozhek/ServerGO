@@ -5,7 +5,6 @@ import (
 	"fmt"
 )
 
-// Функция для создания подключения к базе данных PostgreSQL
 func ConnectDB() (*sql.DB, error) {
 	connectionInfo := "host=localhost port=5432 user=postgres password=1234 dbname=mydatabase sslmode=disable"
 
@@ -14,7 +13,6 @@ func ConnectDB() (*sql.DB, error) {
 		return nil, err
 	}
 
-	// Проверка подключения к базе данных
 	if err := db.Ping(); err != nil {
 		db.Close()
 		return nil, fmt.Errorf("failed to ping database: %v", err)
