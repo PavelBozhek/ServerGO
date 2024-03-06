@@ -45,6 +45,18 @@ type ErrorResponse struct {
 	Error string `json:"error"`
 }
 
+type Post struct {
+	ID      int    `json:"id"`
+	Title   string `json:"title"`
+	Content string `json:"content"`
+}
+
+type Comment struct {
+	ID      int    `json:"id"`
+	PostID  int    `json:"postId"`
+	Content string `json:"content"`
+}
+
 func main() {
 	// Инициализация маршрутизатора Gin
 	router := gin.Default()
@@ -90,6 +102,140 @@ func main() {
 		session.Save()
 
 		c.JSON(http.StatusOK, SuccessResponse{Message: "User registered successfully"})
+	})
+	// Маршруты и обработчики для управления постами и комментариями
+	router.POST("/posts", func(c *gin.Context) {
+		var post Post
+		if err := c.BindJSON(&post); err != nil {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid JSON"})
+			return
+		}
+
+		// Добавление поста в базу данных
+		_, err := db.Exec("INSERT INTO posts (title, content) VALUES ($1, $2)", post.Title, post.Content)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to create post"})
+			return
+		}
+
+		c.JSON(http.StatusCreated, SuccessResponse{Message: "Post created successfully"})
+	})
+
+	router.GET("/posts", func(c *gin.Context) {
+		var posts []Post
+		rows, err := db.Query("SELECT id, title, content FROM posts")
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to fetch posts"})
+			return
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var post Post
+			if err := rows.Scan(&post.ID, &post.Title, &post.Content); err != nil {
+				c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to fetch posts"})
+				return
+			}
+			posts = append(posts, post)
+		}
+
+		c.JSON(http.StatusOK, posts)
+	})
+
+	router.GET("/posts/:id", func(c *gin.Context) {
+		id := c.Param("id")
+		var post Post
+		err := db.QueryRow("SELECT id, title, content FROM posts WHERE id = $1", id).Scan(&post.ID, &post.Title, &post.Content)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to fetch post"})
+			return
+		}
+
+		c.JSON(http.StatusOK, post)
+	})
+
+	// Маршрут для обновления поста
+	router.PUT("/posts/:id", func(c *gin.Context) {
+		id := c.Param("id")
+		var post Post
+		if err := c.BindJSON(&post); err != nil {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid JSON"})
+			return
+		}
+
+		_, err := db.Exec("UPDATE posts SET title = $1, content = $2 WHERE id = $3", post.Title, post.Content, id)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to update post"})
+			return
+		}
+
+		c.JSON(http.StatusOK, SuccessResponse{Message: "Post updated successfully"})
+	})
+
+	// Маршрут для удаления комментария
+	router.DELETE("/posts/:postID/comments/:commentID", func(c *gin.Context) {
+		postID := c.Param("postID")
+		commentID := c.Param("commentID")
+
+		_, err := db.Exec("DELETE FROM comments WHERE id = $1 AND post_id = $2", commentID, postID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to delete comment"})
+			return
+		}
+
+		c.JSON(http.StatusOK, SuccessResponse{Message: "Comment deleted successfully"})
+	})
+
+	router.POST("/posts/:id/comments", func(c *gin.Context) {
+		id := c.Param("id")
+		var comment Comment
+		if err := c.BindJSON(&comment); err != nil {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid JSON"})
+			return
+		}
+
+		_, err := db.Exec("INSERT INTO comments (post_id, content) VALUES ($1, $2)", id, comment.Content)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to create comment"})
+			return
+		}
+
+		c.JSON(http.StatusCreated, SuccessResponse{Message: "Comment created successfully"})
+	})
+
+	router.GET("/posts/:id/comments", func(c *gin.Context) {
+		id := c.Param("id")
+		var comments []Comment
+		rows, err := db.Query("SELECT id, content FROM comments WHERE post_id = $1", id)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to fetch comments"})
+			return
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var comment Comment
+			if err := rows.Scan(&comment.ID, &comment.Content); err != nil {
+				c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to fetch comments"})
+				return
+			}
+			comments = append(comments, comment)
+		}
+
+		c.JSON(http.StatusOK, comments)
+	})
+
+	router.DELETE("/posts/:postID/comments/:commentID", func(c *gin.Context) {
+		postID := c.Param("postID")
+		commentID := c.Param("commentID")
+
+		_, err := db.Exec("DELETE FROM comments WHERE id = $1 AND post_id = $2", commentID, postID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to delete comment"})
+			return
+		}
+
+		c.JSON(http.StatusOK, SuccessResponse{Message: "Comment deleted successfully"})
 	})
 
 	router.POST("/login", func(c *gin.Context) {
