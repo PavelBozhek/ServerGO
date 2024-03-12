@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 type RegistrationRequest struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
@@ -27,14 +29,16 @@ type LoginRequest struct {
 }
 
 type Post struct {
-	ID      int    `json:"id"`
-	Title   string `json:"title"`
-	Content string `json:"content"`
-	Owner   int    `json:"owner"`
+	ID      int       `json:"id"`
+	Title   string    `json:"title"`
+	Content string    `json:"content"`
+	Owner   int       `json:"owner"`
+	date    time.Time `json:"date"`
 }
 
 type Comment struct {
-	ID      int    `json:"id"`
-	PostID  int    `json:"postId"`
-	Content string `json:"content"`
+	ID      int       `json:"id"`
+	PostID  int       `json:"postId"`
+	Content string    `json:"content"`
+	date    time.Time `json:"date"`
 }

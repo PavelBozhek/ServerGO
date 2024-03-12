@@ -2,9 +2,12 @@ package blog
 
 import (
 	"database/sql"
-	"example.com/server/pkg/models"
-	"github.com/gin-gonic/gin"
 	"net/http"
+	"strconv"
+
+	"example.com/server/pkg/models"
+	"example.com/server/pkg/repository"
+	"github.com/gin-gonic/gin"
 )
 
 func CreateComment(c *gin.Context, db *sql.DB) {
@@ -15,7 +18,8 @@ func CreateComment(c *gin.Context, db *sql.DB) {
 		return
 	}
 
-	_, err := db.Exec("INSERT INTO comments (post_id, content) VALUES ($1, $2)", id, comment.Content)
+	err := repository.CreateComment(id, comment.Content, db)
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to create comment"})
 		return
@@ -25,9 +29,13 @@ func CreateComment(c *gin.Context, db *sql.DB) {
 }
 
 func GetComment(c *gin.Context, db *sql.DB) {
-	id := c.Param("id")
+
+	idStr := c.Param("id")
 	var comments []models.Comment
-	rows, err := db.Query("SELECT id, content FROM comments WHERE post_id = $1", id)
+
+	id, _ := strconv.Atoi(idStr)
+	rows, err := repository.GetAllComments(id, db)
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch comments"})
 		return
@@ -47,10 +55,13 @@ func GetComment(c *gin.Context, db *sql.DB) {
 }
 
 func DeleteComment(c *gin.Context, db *sql.DB) {
-	postID := c.Param("postID")
-	commentID := c.Param("commentID")
+	postIDStr := c.Param("postID")
+	commentIDStr := c.Param("commentID")
 
-	_, err := db.Exec("DELETE FROM comments WHERE id = $1 AND post_id = $2", commentID, postID)
+	commentID, _ := strconv.Atoi(commentIDStr)
+	postID, _ := strconv.Atoi(postIDStr)
+	err := repository.DeleteComment(commentID, postID, db)
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to delete comment"})
 		return
